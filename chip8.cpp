@@ -13,6 +13,7 @@ class Chip8
         void LoadFontSet();
         bool LoadRom(char *);
         int SizeRom(FILE *);
+        void ExecuteOpcode();
     private:
         uint16_t opcode;
         uint16_t pc;
@@ -38,25 +39,24 @@ void Chip8::Initialize()
     sound_timer = 0;
 
     //clear memory, screen, stack, registers, keyboard
-    for (int i; i < 4096; i++)
+    for (int i=0; i < 4096; i++)
         memory[i] = 0;
 
-    for (int i; i < 16; i++)
+    for (int i=0; i < 16; i++)
         stack[i]= 0;
 
-    for (int i; i < 16; i++)
+    for (int i=0; i < 16; i++)
         keyboard[i] = 0;
 
-    for (int i; i < 16; i++)
+    for (int i=0; i < 16; i++)
         V[i]= 0;
     
-    for (int y; y < 64; y++)
-        for (int x; x < 32; x++)
+    for (int y=0; y < 64; y++)
+        for (int x=0; x < 32; x++)
             graphics[y][x] = 0;
 
     //load fontset into memory
     LoadFontSet();
-
 }
 
 void Chip8::LoadFontSet() 
@@ -87,13 +87,14 @@ void Chip8::LoadFontSet()
 bool Chip8::LoadRom(char *filename) 
 {
     FILE *rom;
-    if ((rom = fopen(filename, "rb")) == NULL)
+    if ((rom = fopen(filename, "rb")) == NULL) {
         cout << "unable to open rom file" << endl;
         return false;
+    }
     int filesize = SizeRom(rom);
     unsigned char buffer[filesize];
     fread(buffer, filesize, 1, rom);
-    for (int i=0; i<filesize; i++) {
+    for (int i=0; i < filesize; i++) {
         memory[0x200 + i] = buffer[i];
     }
     return true;
@@ -108,8 +109,18 @@ int Chip8::SizeRom(FILE *rom)
     return end_pos;
 }
 
+void Chip8::ExecuteOpcode()
+{
+    opcode = memory[pc]<<8 | memory[pc+1];
+    pc += 2;
+    cout << hex << opcode << endl;
+}
+
 int main() 
 {
     Chip8 chip8;
+    
+    chip8.Initialize();
     chip8.LoadRom("PONG");
+    chip8.ExecuteOpcode();
 }
