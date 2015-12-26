@@ -1,5 +1,5 @@
 # chip8
-My attempt at emulating the CHIP-8 interpreted programming (written in c++).
+My attempt at emulating the CHIP-8 interpreted programming language/VM (written in c++). Seems to be the simplest emulator to start with.
 
 Good resources:
 
