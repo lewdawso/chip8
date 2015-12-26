@@ -68,12 +68,14 @@ void Chip8::LoadFontSet() {
 
 bool Chip8::LoadRom(char *filename) {
     FILE *rom;
-    rom = fopen(filename, "rb");
+    if ((rom = fopen(filename, "rb")) == NULL)
+        cout << "unable to open rom file" << endl;
+        return false;
     int filesize = SizeRom(rom);
     unsigned char buffer[filesize];
     fread(buffer, filesize, 1, rom);
     for (int i=0; i<filesize; i++) {
-        printf("%X ", buffer[i]);
+        memory[0x200 + i] = buffer[i];
     }
     return true;
 }
