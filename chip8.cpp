@@ -55,6 +55,7 @@ void Chip8::Initialize()
         for (int x=0; x < 32; x++)
             graphics[y][x] = 0;
 
+
     //load fontset into memory
     LoadFontSet();
 }
@@ -113,7 +114,122 @@ void Chip8::ExecuteOpcode()
 {
     opcode = memory[pc]<<8 | memory[pc+1];
     pc += 2;
-    cout << hex << opcode << endl;
+
+    switch((opcode & 0xF000)>>12) 
+    {
+        case 0x0:
+            if (opcode & 0x00FF == 0xEE) {
+                //RET - return from a subroutine
+                pc = stack[--SP];
+            } else if (opcode & 0x00FF == 0xE0) {
+                //CLS - clear the display
+                for (int y=0; y < 64; y++)
+                    for (int x=0; x < 32; x++)
+                        graphics[y][x] = 0;
+            } else {
+                //0nnn - SYS addr
+                pc = opcode & 0x0FFF;
+            }
+            break;
+        case 0x1: //1nnn - JP addr
+            pc = opcode & 0x0FFF;
+            break;
+        case 0x2: //2nnn - call subroutine
+            stack[sp] = pc;
+            sp++;
+            pc = opcode & 0x0FFF;
+            break;
+        case 0x3: //3xkk - skip next instruction if Vx==kk
+            if (V[(opcode & 0x0F00)>>8] == opcode & 0x00FF) {
+                pc += 2;
+            }
+            break;
+        case 0x4: //4xkk - skip next instruction if Vx!=kk
+            if (V[(opcode & 0x0F00)>>8] != opcode & 0x00FF) {
+                pc += 2;
+            }
+            break;
+        case 0x5: //4xy0 - skip next instruction if Vx!=kk
+            if (V[(opcode & 0x0F00)>>8] == V[(opcode & 0x00F0)>>4]) {
+                pc += 2;
+            }
+            break;
+        case 0x6: //6xkk - Vx=kk
+            V[(opcode & 0x0F00)>>8] = opcode & 0x00FF;
+            break;
+        case 0x7: //7xkk - Vx+=kk
+            V[(opcode & 0x0F00)>>8] += 0x00FF;
+            break;
+        case 0x8: 
+            switch(opcode & 0x000F) {
+                case 0x0: //Vx = Vy
+                    V[(opcode & 0x0F00)>>8] = V[(opcode & 0x0F0)>>4];
+                    break;
+                case 0x1: //Vx = Vx | Vy 
+                    V[(opcode & 0x0F00)>>8] |= V[(opcode & 0x0F0)>>4];
+                    break;
+                case 0x2: //Vx = Vx & Vy 
+                    V[(opcode & 0x0F00)>>8] &= V[(opcode & 0x0F0)>>4];
+                    break;
+                case 0x3: //Vx = Vx XOR Vy 
+                    V[(opcode & 0x0F00)>>8] ^= V[(opcode & 0x0F0)>>4];
+                    break;
+                case 0x4: //Vx = Vx + Vy 
+                    int temp = V[(opcode & 0x0F00)>>8] + V[(opcode & 0x0F0)>>4];
+                    if (temp > 255) {
+                       V[0xF] = 1;
+                       V[(opcode & 0x0F00)>>8] = temp & 0xFF;
+                    } else {
+                    V[0xF] = 0;
+                    V[(opcode & 0xF00)>>8] = temp;
+                    }
+                    break;
+                case 0x5: //Vx = Vx - Vy
+                    int temp = V[(opcode & 0x0F00)>>8] - V[(opcode & 0x0F0)>>4];
+                    if (temp > 0) {
+                        V[0xF] = 1;
+                    } else {
+                        V[0xF] = 0;
+                    }
+                    V[(opcode & 0x0F00)>>8] = temp;
+                    break;
+                case 0x6: //Vx = Vx / 2
+                    V[0xF] = V[(opcode & 0x0F00)>>8] & 0x1;
+                    V[(opcode & 0x0F00)>>8] >>= 1;
+                    break;
+                case 0x7: //Vx = Vy - Vx
+                    int temp = V[(opcode & 0x00F0)>>4] - V[(opcode & 0xF00)>>8];
+                    if (temp > 0) {
+                        V[0xF] = 1;
+                    } else {
+                        V[0xF] = 0;
+                    }
+                    V[(opcode & 0x0F00)>>8] = temp;
+                    break;
+                case 0xE: //Vx = Vx * 2
+                    V[0xF] = V[(opcode & 0x0F00)>>8] & 0x80;
+                    V[(opcode & 0x0F00)>>8] <<= 1;
+                    break;
+
+                case 0xE: //Vx=Vx|Vy 
+                    V[(opcode & 0x0F00)>>8] |= V[(opcode & 0x0F0)>>4];
+                    break;
+                default:
+                    cout << "opcode not recognised: " << hex << opcode << endl;
+            }
+            break;
+        case 0xA: //Annn - I=nnn
+            I = opcode & 0xFFF;
+            break;
+        case 0xD: //Dxyn, draw n bytes starting at memory location I, at (Vx, Vy)
+            break;
+
+        case 
+            
+            
+        
+    }
+
 }
 
 int main() 
