@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <stdlib.h>
 
 using namespace std;
 
@@ -216,10 +217,101 @@ void Chip8::ExecuteOpcode()
                     cout << "opcode not recognised: " << hex << opcode << endl;
             }
             break;
+        case 0x9: //9xy0 - Skip next instruction if Vx != Vy
+            if ((V[(opcode & 0x0F00)>>8]) != (V[(opcode & 0x00F0)])) {
+                pc += 2;
+            }
+            break;
         case 0xA: //Annn - I=nnn
             I = opcode & 0xFFF;
             break;
+        case 0xB: //Bnnn - I=nnn+V0
+            pc = opcode & 0xFFF + V[0];
+            break;
+        case 0xC: //Cxkk - Vx = RAND & kk
+            V[(opcode & 0x0F00)>>8] = ((rand() % 256) & (opcode & 0xFF));
+            break;
         case 0xD: //Dxyn, draw n bytes starting at memory location I, at (Vx, Vy)
+            break;
+        case 0xE:
+            switch(opcode & 0xFF) 
+            {
+                case 0x9E: //Ex9E - skip next instruction if key V[x] is pressed
+                    if (keyboard[V[(opcode & 0x0F00)>>8]])
+                    {
+                        pc += 2;
+                    }
+                    break;
+                case 0xA1: //ExA1 - skip next instruction if key V[x] is not pressed
+                    if (keyboard[V[(opcode & 0x0F00)>>8]])
+                    {
+                        pc += 2;
+                    }
+                    break;
+                default:
+                    cout << "opcode not recognised: " << hex << opcode << endl;
+            }
+            break;
+        case 0xF:
+            switch(opcode & 0xFF)
+            {
+                case 0x07: //Fx07 - Vx = delay_timer
+                    V[(opcode & 0x0F00)>>8] = delay_timer;
+                    break;
+                case 0x0A: { //Fx0A - wait for user to press key, Vx = key
+                    bool press = false;
+                    while(!press)
+                    {
+                        for (int i=0; i<16; i++)
+                        {
+                            if (keyboard[i])
+                            {
+                                V[(opcode & 0x0F00)>>8] = i;
+                                press = true;
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                    }
+                case 0x15: //Fx15 - delay_timer = Vx
+                    delay_timer = V[(opcode & 0x0F00)>>8];
+                    break;
+                case 0x18: //Fx18 - sound_timer = Vx
+                    sound_timer = V[(opcode & 0x0F00)>>8];
+                    break;
+                case 0x1E: //Fx18 = I = I + Vx
+                    I += V[(opcode & 0x0F00)>>8];
+                    break;
+                case 0x29: //Fx29 - I = location of sprite for digit Vx
+                    I = V[(opcode & 0x0F00)>>8] * 5;
+                    break;
+                case 0x33: { //Fx33 - BCD representation of Vx in I, I+1, I+2
+                    const uint8_t x = V[(opcode & 0x0F00)>>8];
+                    memory[I] = (x -(x % 100)) / 100;
+                    memory[I+1] = (x - (x % 10) - (memory[I] * 100)) / 10;
+                    memory[I+2] = (x - (memory[I] * 100) - (memory[I+1] * 10));
+                    break;
+                    }
+                case 0x55: { //Fx55 - store V0 through Vx in memory starting at I
+                    const uint8_t x = V[(opcode & 0x0F00)>>8];
+                    for (int i=0; i<x; i++)
+                    {
+                        memory[I+i] = V[i];
+                    }
+                    break;
+                }
+                case 0x65: { //Fx65 - store memory[I + (0 through x)] into V
+                    const uint8_t x = V[(opcode & 0x0F00)>>8];
+                    for (int i=0; i<x; i++)
+                    {
+                        V[i] = memory[I+i];
+                    }
+                    break;
+                }
+                default:
+                    cout << "opcode not recognised: " << hex << opcode << endl;
+            }
             break;
     }
 
