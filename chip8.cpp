@@ -103,9 +103,9 @@ bool Chip8::LoadRom(char *filename)
 
 int Chip8::SizeRom(FILE *rom) 
 {
-    int cur_pos = ftell(rom);
+    const int cur_pos = ftell(rom);
     fseek(rom, 0, SEEK_END);
-    int end_pos = ftell(rom);
+    const int end_pos = ftell(rom);
     fseek(rom, cur_pos, SEEK_SET);
     return end_pos;
 }
@@ -118,10 +118,10 @@ void Chip8::ExecuteOpcode()
     switch((opcode & 0xF000)>>12) 
     {
         case 0x0:
-            if (opcode & 0x00FF == 0xEE) {
+            if ((opcode & 0x00FF) == 0xEE) {
                 //RET - return from a subroutine
-                pc = stack[--SP];
-            } else if (opcode & 0x00FF == 0xE0) {
+                pc = stack[--sp];
+            } else if ((opcode & 0x00FF) == 0xE0) {
                 //CLS - clear the display
                 for (int y=0; y < 64; y++)
                     for (int x=0; x < 32; x++)
@@ -140,12 +140,12 @@ void Chip8::ExecuteOpcode()
             pc = opcode & 0x0FFF;
             break;
         case 0x3: //3xkk - skip next instruction if Vx==kk
-            if (V[(opcode & 0x0F00)>>8] == opcode & 0x00FF) {
+            if ((V[(opcode & 0x0F00)>>8]) == (opcode & 0x00FF)) {
                 pc += 2;
             }
             break;
         case 0x4: //4xkk - skip next instruction if Vx!=kk
-            if (V[(opcode & 0x0F00)>>8] != opcode & 0x00FF) {
+            if ((V[(opcode & 0x0F00)>>8]) != (opcode & 0x00FF)) {
                 pc += 2;
             }
             break;
@@ -163,29 +163,29 @@ void Chip8::ExecuteOpcode()
         case 0x8: 
             switch(opcode & 0x000F) {
                 case 0x0: //Vx = Vy
-                    V[(opcode & 0x0F00)>>8] = V[(opcode & 0x0F0)>>4];
+                    V[(opcode & 0x0F00)>>8] = V[(opcode & 0x00F0)>>4];
                     break;
                 case 0x1: //Vx = Vx | Vy 
-                    V[(opcode & 0x0F00)>>8] |= V[(opcode & 0x0F0)>>4];
+                    V[(opcode & 0x0F00)>>8] |= V[(opcode & 0x00F0)>>4];
                     break;
                 case 0x2: //Vx = Vx & Vy 
-                    V[(opcode & 0x0F00)>>8] &= V[(opcode & 0x0F0)>>4];
+                    V[(opcode & 0x0F00)>>8] &= V[(opcode & 0x00F0)>>4];
                     break;
                 case 0x3: //Vx = Vx XOR Vy 
-                    V[(opcode & 0x0F00)>>8] ^= V[(opcode & 0x0F0)>>4];
+                    V[(opcode & 0x0F00)>>8] ^= V[(opcode & 0x00F0)>>4];
                     break;
-                case 0x4: //Vx = Vx + Vy 
-                    int temp = V[(opcode & 0x0F00)>>8] + V[(opcode & 0x0F0)>>4];
+                case 0x4: { //Vx = Vx + Vy 
+                    const int temp = V[(opcode & 0x0F00)>>8] + V[(opcode & 0x00F0)>>4];
                     if (temp > 255) {
                        V[0xF] = 1;
-                       V[(opcode & 0x0F00)>>8] = temp & 0xFF;
                     } else {
-                    V[0xF] = 0;
-                    V[(opcode & 0xF00)>>8] = temp;
+                        V[0xF] = 0;
                     }
+                    V[(opcode & 0xF00)>>8] = temp & 0xFF;
                     break;
-                case 0x5: //Vx = Vx - Vy
-                    int temp = V[(opcode & 0x0F00)>>8] - V[(opcode & 0x0F0)>>4];
+                }
+                case 0x5: { //Vx = Vx - Vy
+                    const int temp = V[(opcode & 0x0F00)>>8] - V[(opcode & 0x00F0)>>4];
                     if (temp > 0) {
                         V[0xF] = 1;
                     } else {
@@ -193,12 +193,13 @@ void Chip8::ExecuteOpcode()
                     }
                     V[(opcode & 0x0F00)>>8] = temp;
                     break;
+                }
                 case 0x6: //Vx = Vx / 2
                     V[0xF] = V[(opcode & 0x0F00)>>8] & 0x1;
                     V[(opcode & 0x0F00)>>8] >>= 1;
                     break;
-                case 0x7: //Vx = Vy - Vx
-                    int temp = V[(opcode & 0x00F0)>>4] - V[(opcode & 0xF00)>>8];
+                case 0x7: { //Vx = Vy - Vx
+                    const int temp = V[(opcode & 0x00F0)>>4] - V[(opcode & 0xF00)>>8];
                     if (temp > 0) {
                         V[0xF] = 1;
                     } else {
@@ -206,13 +207,10 @@ void Chip8::ExecuteOpcode()
                     }
                     V[(opcode & 0x0F00)>>8] = temp;
                     break;
+                }
                 case 0xE: //Vx = Vx * 2
                     V[0xF] = V[(opcode & 0x0F00)>>8] & 0x80;
                     V[(opcode & 0x0F00)>>8] <<= 1;
-                    break;
-
-                case 0xE: //Vx=Vx|Vy 
-                    V[(opcode & 0x0F00)>>8] |= V[(opcode & 0x0F0)>>4];
                     break;
                 default:
                     cout << "opcode not recognised: " << hex << opcode << endl;
@@ -223,11 +221,6 @@ void Chip8::ExecuteOpcode()
             break;
         case 0xD: //Dxyn, draw n bytes starting at memory location I, at (Vx, Vy)
             break;
-
-        case 
-            
-            
-        
     }
 
 }
