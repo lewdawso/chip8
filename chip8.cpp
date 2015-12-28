@@ -12,7 +12,7 @@ class Chip8
     public:
         void Initialize();
         void LoadFontSet();
-        bool LoadRom(char *);
+        bool LoadRom(const char *);
         int SizeRom(FILE *);
         void ExecuteOpcode();
     private:
@@ -33,6 +33,8 @@ void Chip8::Initialize()
 {
     //most CHIP-8 programs start from 0x200
     pc = 0x200;
+
+    //initialize everything to zero
     opcode = 0;
     I = 0;
     sp = 0;
@@ -86,14 +88,14 @@ void Chip8::LoadFontSet()
         memory[i] = font[i];    
 }
 
-bool Chip8::LoadRom(char *filename) 
+bool Chip8::LoadRom(const char *filename) 
 {
     FILE *rom;
     if ((rom = fopen(filename, "rb")) == NULL) {
-        cout << "unable to open rom file" << endl;
+        cout << "unable to open rom file: " << *filename << endl;
         return false;
     }
-    int filesize = SizeRom(rom);
+    const int filesize = SizeRom(rom);
     unsigned char buffer[filesize];
     fread(buffer, filesize, 1, rom);
     for (int i=0; i < filesize; i++) {
@@ -119,7 +121,8 @@ void Chip8::ExecuteOpcode()
     switch((opcode & 0xF000)>>12) 
     {
         case 0x0:
-            if ((opcode & 0x00FF) == 0xEE) {
+            if ((opcode & 0x00FF) == 0xEE) 
+            {
                 //RET - return from a subroutine
                 pc = stack[--sp];
             } else if ((opcode & 0x00FF) == 0xE0) {
@@ -141,17 +144,20 @@ void Chip8::ExecuteOpcode()
             pc = opcode & 0x0FFF;
             break;
         case 0x3: //3xkk - skip next instruction if Vx==kk
-            if ((V[(opcode & 0x0F00)>>8]) == (opcode & 0x00FF)) {
+            if ((V[(opcode & 0x0F00)>>8]) == (opcode & 0x00FF)) 
+            {
                 pc += 2;
             }
             break;
         case 0x4: //4xkk - skip next instruction if Vx!=kk
-            if ((V[(opcode & 0x0F00)>>8]) != (opcode & 0x00FF)) {
+            if ((V[(opcode & 0x0F00)>>8]) != (opcode & 0x00FF)) 
+            {
                 pc += 2;
             }
             break;
         case 0x5: //4xy0 - skip next instruction if Vx!=kk
-            if (V[(opcode & 0x0F00)>>8] == V[(opcode & 0x00F0)>>4]) {
+            if (V[(opcode & 0x0F00)>>8] == V[(opcode & 0x00F0)>>4]) 
+            {
                 pc += 2;
             }
             break;
@@ -162,7 +168,8 @@ void Chip8::ExecuteOpcode()
             V[(opcode & 0x0F00)>>8] += 0x00FF;
             break;
         case 0x8: 
-            switch(opcode & 0x000F) {
+            switch(opcode & 0x000F) 
+            {
                 case 0x0: //Vx = Vy
                     V[(opcode & 0x0F00)>>8] = V[(opcode & 0x00F0)>>4];
                     break;
@@ -177,7 +184,8 @@ void Chip8::ExecuteOpcode()
                     break;
                 case 0x4: { //Vx = Vx + Vy 
                     const int temp = V[(opcode & 0x0F00)>>8] + V[(opcode & 0x00F0)>>4];
-                    if (temp > 255) {
+                    if (temp > 255) 
+                    {
                        V[0xF] = 1;
                     } else {
                         V[0xF] = 0;
@@ -187,7 +195,8 @@ void Chip8::ExecuteOpcode()
                 }
                 case 0x5: { //Vx = Vx - Vy
                     const int temp = V[(opcode & 0x0F00)>>8] - V[(opcode & 0x00F0)>>4];
-                    if (temp > 0) {
+                    if (temp > 0) 
+                    {
                         V[0xF] = 1;
                     } else {
                         V[0xF] = 0;
@@ -218,7 +227,8 @@ void Chip8::ExecuteOpcode()
             }
             break;
         case 0x9: //9xy0 - Skip next instruction if Vx != Vy
-            if ((V[(opcode & 0x0F00)>>8]) != (V[(opcode & 0x00F0)])) {
+            if ((V[(opcode & 0x0F00)>>8]) != (V[(opcode & 0x00F0)])) 
+            {
                 pc += 2;
             }
             break;
@@ -273,7 +283,7 @@ void Chip8::ExecuteOpcode()
                         }
                     }
                     break;
-                    }
+                }
                 case 0x15: //Fx15 - delay_timer = Vx
                     delay_timer = V[(opcode & 0x0F00)>>8];
                     break;
@@ -292,7 +302,7 @@ void Chip8::ExecuteOpcode()
                     memory[I+1] = (x - (x % 10) - (memory[I] * 100)) / 10;
                     memory[I+2] = (x - (memory[I] * 100) - (memory[I+1] * 10));
                     break;
-                    }
+                }
                 case 0x55: { //Fx55 - store V0 through Vx in memory starting at I
                     const uint8_t x = V[(opcode & 0x0F00)>>8];
                     for (int i=0; i<x; i++)
