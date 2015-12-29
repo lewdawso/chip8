@@ -241,8 +241,28 @@ void Chip8::ExecuteOpcode()
         case 0xC: //Cxkk - Vx = RAND & kk
             V[(opcode & 0x0F00)>>8] = ((rand() % 256) & (opcode & 0xFF));
             break;
-        case 0xD: //Dxyn, draw n bytes starting at memory location I, at (Vx, Vy)
+        case 0xD: { //Dxyn, draw n bytes starting at memory location I, at coordinates (Vx, Vy)
+            //a sprite is an n*8 block, the width of which is 'filled' by the byte at I
+            // if any pixels are erased, Vf = 1, otherwise Vf = 0
+            const uint8_t vx = V[opcode & 0xF00];
+            const uint8_t vy = V[opcode & 0xF0];
+            const uint8_t n = opcode & 0xF;
+            for (int y=0; y<n; y++) 
+            {
+                uint8_t byte = memory[I+y];
+                for (int x=0; x<8; x++)
+                {
+                    if (byte & (1<<(8-x)))
+                    {
+                        V[0xF] == graphics[vy+y][vx+x];
+                        graphics[vy+y][vx+x] ^= 1;
+                    } else {
+                        V[0xF] = 0;
+                    }
+                }
+            }
             break;
+        }
         case 0xE:
             switch(opcode & 0xFF) 
             {
