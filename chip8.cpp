@@ -247,15 +247,30 @@ void Chip8::ExecuteOpcode()
             const uint8_t vx = V[opcode & 0xF00];
             const uint8_t vy = V[opcode & 0xF0];
             const uint8_t n = opcode & 0xF;
-            for (int y=0; y<n; y++) 
+            uint8_t x;
+            uint8_t y;
+            for (int dy=0; dy<n; dy++) 
             {
                 uint8_t byte = memory[I+y];
-                for (int x=0; x<8; x++)
+                for (int dx=0; dx<8; dx++)
                 {
-                    if (byte & (1<<(8-x)))
+                    if (vx+dx>32)
                     {
-                        V[0xF] == graphics[vy+y][vx+x];
-                        graphics[vy+y][vx+x] ^= 1;
+                        x = (vx+dx) - 32;
+                    } else {
+                        x = (vx+dx);
+                    }
+                    if (vy+y>32) 
+                    {
+                        y = (vy+dy) - 64;
+                    } else {
+                        y = (vy+dy);
+                    }
+
+                    if (byte & (1<<(8-dx)))
+                    {
+                        V[0xF] == graphics[y][x];
+                        graphics[y][x] ^= 1;
                     } else {
                         V[0xF] = 0;
                     }
