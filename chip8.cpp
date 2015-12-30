@@ -269,7 +269,7 @@ void Chip8::ExecuteOpcode()
 
                     if (byte & (1<<(8-dx)))
                     {
-                        V[0xF] == graphics[y][x];
+                        V[0xF] = graphics[y][x];
                         graphics[y][x] ^= 1;
                     } else {
                         V[0xF] = 0;
